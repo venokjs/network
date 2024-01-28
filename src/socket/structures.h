@@ -5,6 +5,7 @@
 
 #include <winsock2.h>
 
+/* Define what a socket descriptor is based on platform */
 #define VENOK_SOCKET_DESCRIPTOR SOCKET
 #else
 #define VENOK_SOCKET_DESCRIPTOR int
