@@ -27,10 +27,7 @@ unsigned short v_socket_context_timestamp(int ssl, struct v_socket_context *cont
 
 /* Adds SNI domain and cert in asn1 format */
 void v_socket_context_add_server_name(int ssl, struct v_socket_context *context, const char *hostname_pattern,
-                                      struct v_socket_context_options_t options, void *user);
-
-void v_bun_socket_context_add_server_name(int ssl, struct v_socket_context *context, const char *hostname_pattern,
-                                          struct v_bun_socket_context_options_t options, void *user);
+                                      struct v_bun_socket_context_options options, void *user);
 
 void v_socket_context_remove_server_name(int ssl, struct v_socket_context *context, const char *hostname_pattern);
 
@@ -45,11 +42,8 @@ void *v_socket_context_find_server_name_userdata(int ssl, struct v_socket_contex
 void *v_socket_context_get_native_handle(int ssl, struct v_socket_context *context);
 
 /* A socket context holds shared callbacks and user data extension for associated sockets */
-struct v_socket_context *v_create_socket_context(int ssl, struct v_loop_t *loop,
-                                                 int ext_size, struct v_socket_context_options_t options);
-
-struct v_socket_context *v_create_bun_socket_context(int ssl, struct v_loop_t *loop,
-                                                     int ext_size, struct v_bun_socket_context_options_t options);
+struct v_socket_context *v_create_socket_context(int ssl, struct v_loop *loop,
+                                                 int ext_size, struct v_bun_socket_context_options options);
 
 /* Delete resources allocated at creation time. */
 void v_socket_context_free(int ssl, struct v_socket_context *context);
@@ -82,7 +76,7 @@ void v_socket_context_on_connect_error(int ssl, struct v_socket_context *context
 
 void v_socket_context_on_handshake(int ssl, struct v_socket_context *context,
                                    void (*on_handshake)(struct v_socket *, int success,
-                                                        struct v_bun_verify_error_t verify_error, void *custom_data),
+                                                        struct v_bun_verify_error verify_error, void *custom_data),
                                    void *custom_data);
 
 /* Emitted when a socket has been half-closed */
@@ -96,14 +90,14 @@ void *v_socket_context_ext(int ssl, struct v_socket_context *context);
 void v_socket_context_close(int ssl, struct v_socket_context *context);
 
 /* Listen for connections. Acts as the main driving cog in a server. Will call set async callbacks. */
-struct v_listen_socket_t *v_socket_context_listen(int ssl, struct v_socket_context *context,
-                                                  const char *host, int port, int options, int socket_ext_size);
+struct v_listen_socket *v_socket_context_listen(int ssl, struct v_socket_context *context,
+                                                const char *host, int port, int options, int socket_ext_size);
 
-struct v_listen_socket_t *v_socket_context_listen_unix(int ssl, struct v_socket_context *context,
-                                                       const char *path, int options, int socket_ext_size);
+struct v_listen_socket *v_socket_context_listen_unix(int ssl, struct v_socket_context *context,
+                                                     const char *path, int options, int socket_ext_size);
 
 /* listen_socket.c/.h */
-void v_listen_socket_close(int ssl, struct v_listen_socket_t *ls);
+void v_listen_socket_close(int ssl, struct v_listen_socket *ls);
 
 /* Land in on_open or on_connection_error or return null or return socket */
 struct v_socket *v_socket_context_connect(int ssl, struct v_socket_context *context,
@@ -123,7 +117,7 @@ int v_socket_is_established(int ssl, struct v_socket *s);
 struct v_socket *v_socket_close_connecting(int ssl, struct v_socket *s);
 
 /* Returns the loop for this socket context. */
-struct v_loop_t *v_socket_context_loop(int ssl, struct v_socket_context *context);
+struct v_loop *v_socket_context_loop(int ssl, struct v_socket_context *context);
 
 /* Invalidates passed socket, returning a new resized socket which belongs to a different socket context.
  * Used mainly for "socket upgrades" such as when transitioning from HTTP to WebSocket. */
