@@ -13,7 +13,7 @@
 #include <mach/mach.h>
 #endif
 
-#include "socket/network/bsd.h"
+#include "../network/bsd.h"
 
 /* We have many different eventing implementations */
 #if defined(VENOK_USE_EPOLL) || defined(VENOK_USE_KQUEUE)
