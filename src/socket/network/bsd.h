@@ -34,11 +34,6 @@ struct bsd_addr {
 };
 
 /* TCP Layer*/
-
-int bsd_sendmmsg(VENOK_SOCKET_DESCRIPTOR fd, void *msgvec, unsigned int vlen, int flags);
-
-int bsd_recvmmsg(VENOK_SOCKET_DESCRIPTOR fd, void *msgvec, unsigned int vlen, int flags, void *timeout);
-
 VENOK_SOCKET_DESCRIPTOR apple_no_sigpipe(VENOK_SOCKET_DESCRIPTOR fd);
 
 VENOK_SOCKET_DESCRIPTOR bsd_set_nonblocking(VENOK_SOCKET_DESCRIPTOR fd);
@@ -80,6 +75,9 @@ VENOK_SOCKET_DESCRIPTOR bsd_create_connect_socket(const char *host, int port, co
 VENOK_SOCKET_DESCRIPTOR bsd_create_connect_socket_unix(const char *server_path, int options);
 
 /* UDP Layer */
+int bsd_sendmmsg(VENOK_SOCKET_DESCRIPTOR fd, void *msgvec, unsigned int vlen, int flags);
+
+int bsd_recvmmsg(VENOK_SOCKET_DESCRIPTOR fd, void *msgvec, unsigned int vlen, int flags, void *timeout);
 
 int bsd_udp_packet_buffer_payload_length(void *msgvec, int index);
 
