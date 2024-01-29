@@ -1,5 +1,5 @@
-#ifndef VENOK_SNI_TREE_H
-#define VENOK_SNI_TREE_H
+#ifndef VENOK_SNI_TREE_CC_H
+#define VENOK_SNI_TREE_CC_H
 
 #ifndef VENOK_NO_SSL
 #include <map>
@@ -173,4 +173,4 @@ void *sni_find(void *sni, const char *hostname) {
 
 #endif
 
-#endif //VENOK_SNI_TREE_H
+#endif //VENOK_SNI_TREE_CC_H
