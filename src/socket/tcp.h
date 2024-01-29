@@ -51,6 +51,9 @@ void v_socket_context_free(int ssl, struct v_socket_context *context);
 struct v_socket_context_options v_socket_verify_error(int ssl, struct v_socket *context);
 
 /* Setters of various async callbacks */
+void us_socket_context_on_pre_open(int ssl, struct us_socket_context_t *context,
+                                   VENOK_SOCKET_DESCRIPTOR (*on_pre_open)(VENOK_SOCKET_DESCRIPTOR fd));
+
 void v_socket_context_on_open(int ssl, struct v_socket_context *context,
                               struct v_socket *(*on_open)(struct v_socket *s, int is_client, char *ip,
                                                           int ip_length));
