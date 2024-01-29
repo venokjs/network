@@ -202,7 +202,7 @@ void v_ssl_socket_timeout(struct v_ssl_socket *s, unsigned int seconds);
 void *v_ssl_socket_context_ext(struct v_ssl_socket_context *s);
 struct v_ssl_socket_context *v_ssl_socket_get_context(struct v_ssl_socket *s);
 void *v_ssl_socket_ext(struct v_ssl_socket *s);
-int v_ssl_socket_is_shut_down(struct v_ssl_socket *s);
+int v_ssl_socket_is_shutdown(struct v_ssl_socket *s);
 void v_ssl_socket_shutdown(struct v_ssl_socket *s);
 
 struct v_ssl_socket *v_ssl_socket_context_adopt_socket(struct v_ssl_socket_context *context, struct v_ssl_socket *s, int ext_size);
