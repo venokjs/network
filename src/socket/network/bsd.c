@@ -438,3 +438,273 @@ inline __attribute__((always_inline)) VENOK_SOCKET_DESCRIPTOR bsd_bind_listen_fd
     return listenFd;
 }
 
+/* Shared Layer */
+
+// return VENOK_SOCKET_ERROR or the fd that represents listen socket
+// Listen both on ipv6 and ipv4
+VENOK_SOCKET_DESCRIPTOR bsd_create_listen_socket(const char *host, int port, int options) {
+    struct addrinfo hints, *result;
+    memset(&hints, 0, sizeof(struct addrinfo));
+
+    hints.ai_flags = AI_PASSIVE;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    char port_string[16];
+    snprintf(port_string, 16, "%d", port);
+
+    if (getaddrinfo(host, port_string, &hints, &result)) return VENOK_SOCKET_ERROR;
+
+    VENOK_SOCKET_DESCRIPTOR listenFd = VENOK_SOCKET_ERROR;
+    struct addrinfo *listenAddr;
+    for (struct addrinfo *a = result; a != NULL; a = a->ai_next) {
+        if (a->ai_family == AF_INET6) {
+            listenFd = bsd_create_socket(a->ai_family, a->ai_socktype, a->ai_protocol);
+            if (listenFd == VENOK_SOCKET_ERROR) continue;
+
+            listenAddr = a;
+            if (bsd_bind_listen_fd(listenFd, listenAddr, port, options) != VENOK_SOCKET_ERROR) {
+                freeaddrinfo(result);
+                return listenFd;
+            }
+
+            bsd_close_socket(listenFd);
+        }
+    }
+
+    for (struct addrinfo *a = result; a != NULL; a = a->ai_next) {
+        if (a->ai_family == AF_INET) {
+            listenFd = bsd_create_socket(a->ai_family, a->ai_socktype, a->ai_protocol);
+            if (listenFd == VENOK_SOCKET_ERROR) continue;
+
+            listenAddr = a;
+            if (bsd_bind_listen_fd(listenFd, listenAddr, port, options) != VENOK_SOCKET_ERROR) {
+                freeaddrinfo(result);
+                return listenFd;
+            }
+
+            bsd_close_socket(listenFd);
+        }
+    }
+
+    freeaddrinfo(result);
+    return VENOK_SOCKET_ERROR;
+}
+
+#ifndef _WIN32
+#include <sys/un.h>
+#else
+#include <afunix.h>
+#include <io.h>
+#endif
+#include <sys/stat.h>
+#include <stddef.h>
+
+VENOK_SOCKET_DESCRIPTOR bsd_create_listen_socket_unix(const char *path, int options) {
+
+    VENOK_SOCKET_DESCRIPTOR listenFd = VENOK_SOCKET_ERROR;
+
+    listenFd = bsd_create_socket(AF_UNIX, SOCK_STREAM, 0);
+
+    if (listenFd == VENOK_SOCKET_ERROR) return VENOK_SOCKET_ERROR;
+
+#ifndef _WIN32
+    // 700 permission by default
+    fchmod(listenFd, S_IRWXU);
+#else
+    _chmod(path, S_IREAD | S_IWRITE | S_IEXEC);
+#endif
+
+    struct sockaddr_un server_address;
+    memset(&server_address, 0, sizeof(server_address));
+    server_address.sun_family = AF_UNIX;
+    strcpy(server_address.sun_path, path);
+    int size = offsetof(struct sockaddr_un, sun_path) + strlen(server_address.sun_path);
+#ifdef _WIN32
+    _unlink(path);
+#else
+    unlink(path);
+#endif
+
+    if (bind(listenFd, (struct sockaddr *) &server_address, size) || listen(listenFd, 512)) {
+        bsd_close_socket(listenFd);
+        return VENOK_SOCKET_ERROR;
+    }
+
+    return listenFd;
+}
+
+VENOK_SOCKET_DESCRIPTOR bsd_create_udp_socket(const char *host, int port) {
+    struct addrinfo hints, *result;
+    memset(&hints, 0, sizeof(struct addrinfo));
+
+    hints.ai_flags = AI_PASSIVE;
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+
+    char port_string[16];
+    snprintf(port_string, 16, "%d", port);
+
+    if (getaddrinfo(host, port_string, &hints, &result)) return VENOK_SOCKET_ERROR;
+
+    VENOK_SOCKET_DESCRIPTOR listenFd = VENOK_SOCKET_ERROR;
+    struct addrinfo *listenAddr;
+    for (struct addrinfo *a = result; a && listenFd == VENOK_SOCKET_ERROR; a = a->ai_next) {
+        if (a->ai_family == AF_INET6) {
+            listenFd = bsd_create_socket(a->ai_family, a->ai_socktype, a->ai_protocol);
+            listenAddr = a;
+        }
+    }
+
+    for (struct addrinfo *a = result; a && listenFd == VENOK_SOCKET_ERROR; a = a->ai_next) {
+        if (a->ai_family == AF_INET) {
+            listenFd = bsd_create_socket(a->ai_family, a->ai_socktype, a->ai_protocol);
+            listenAddr = a;
+        }
+    }
+
+    if (listenFd == VENOK_SOCKET_ERROR) {
+        freeaddrinfo(result);
+        return VENOK_SOCKET_ERROR;
+    }
+
+    if (port != 0) {
+        /* Should this also go for UDP? */
+        int enabled = 1;
+        setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, (void *) &enabled, sizeof(enabled));
+    }
+
+#ifdef IPV6_V6ONLY
+    int disabled = 0;
+    setsockopt(listenFd, IPPROTO_IPV6, IPV6_V6ONLY, (void *) &disabled, sizeof(disabled));
+#endif
+
+    /* We need destination address for udp packets in both ipv6 and ipv4 */
+
+/* On FreeBSD this option seems to be called like so */
+#ifndef IPV6_RECVPKTINFO
+#define IPV6_RECVPKTINFO IPV6_PKTINFO
+#endif
+
+    int enabled = 1;
+    if (setsockopt(listenFd, IPPROTO_IPV6, IPV6_RECVPKTINFO, (void *) &enabled, sizeof(enabled)) == -1) {
+        if (errno == 92) {
+            if (setsockopt(listenFd, IPPROTO_IP, IP_PKTINFO, (void *) &enabled, sizeof(enabled)) != 0) {
+                printf("Error setting IPv4 pktinfo!\n");
+            }
+        } else {
+            printf("Error setting IPv6 pktinfo!\n");
+        }
+    }
+
+    /* These are used for getting the ECN */
+    if (setsockopt(listenFd, IPPROTO_IPV6, IPV6_RECVTCLASS, (void *) &enabled, sizeof(enabled)) == -1) {
+        if (errno == 92) {
+            if (setsockopt(listenFd, IPPROTO_IP, IP_RECVTOS, (void *) &enabled, sizeof(enabled)) != 0) {
+                printf("Error setting IPv4 ECN!\n");
+            }
+        } else {
+            printf("Error setting IPv6 ECN!\n");
+        }
+    }
+
+    /* We bind here as well */
+    if (bind(listenFd, listenAddr->ai_addr, (socklen_t) listenAddr->ai_addrlen)) {
+        bsd_close_socket(listenFd);
+        freeaddrinfo(result);
+        return VENOK_SOCKET_ERROR;
+    }
+
+    freeaddrinfo(result);
+    return listenFd;
+}
+
+static int bsd_do_connect_raw(struct addrinfo *rp, int fd) {
+    do {
+        if (connect(fd, rp->ai_addr, rp->ai_addrlen) == 0 || errno == EINPROGRESS) return 0;
+
+    } while (errno == EINTR);
+
+    return VENOK_SOCKET_ERROR;
+}
+
+static int bsd_do_connect(struct addrinfo *rp, VENOK_SOCKET_DESCRIPTOR *fd) {
+    while (rp != NULL) {
+        if (bsd_do_connect_raw(rp, *fd) == 0) return 0;
+
+        rp = rp->ai_next;
+        bsd_close_socket(*fd);
+
+        if (rp == NULL) return VENOK_SOCKET_ERROR;
+
+        int resultFd = bsd_create_socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+        if (resultFd < 0) return VENOK_SOCKET_ERROR;
+
+        *fd = resultFd;
+    }
+
+    return VENOK_SOCKET_ERROR;
+}
+
+VENOK_SOCKET_DESCRIPTOR bsd_create_connect_socket(const char *host, int port, const char *source_host, int options) {
+    struct addrinfo hints, *result;
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    char port_string[16];
+    snprintf(port_string, 16, "%d", port);
+
+    if (getaddrinfo(host, port_string, &hints, &result) != 0) return VENOK_SOCKET_ERROR;
+
+    VENOK_SOCKET_DESCRIPTOR fd = bsd_create_socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    if (fd == VENOK_SOCKET_ERROR) {
+        freeaddrinfo(result);
+        return VENOK_SOCKET_ERROR;
+    }
+
+    if (source_host) {
+        struct addrinfo *interface_result;
+        if (!getaddrinfo(source_host, NULL, NULL, &interface_result)) {
+            int ret = bind(fd, interface_result->ai_addr, (socklen_t) interface_result->ai_addrlen);
+            freeaddrinfo(interface_result);
+            if (ret == VENOK_SOCKET_ERROR) {
+                bsd_close_socket(fd);
+                freeaddrinfo(result);
+                return VENOK_SOCKET_ERROR;
+            }
+        }
+
+        if (bsd_do_connect_raw(result, fd) != 0) {
+            bsd_close_socket(fd);
+            freeaddrinfo(result);
+            return VENOK_SOCKET_ERROR;
+        }
+    } else {
+        if (bsd_do_connect(result, &fd) != 0) {
+            freeaddrinfo(result);
+            return VENOK_SOCKET_ERROR;
+        }
+    }
+
+    freeaddrinfo(result);
+    return fd;
+}
+
+VENOK_SOCKET_DESCRIPTOR bsd_create_connect_socket_unix(const char *server_path, int options) {
+    struct sockaddr_un server_address;
+    memset(&server_address, 0, sizeof(server_address));
+    server_address.sun_family = AF_UNIX;
+    strcpy(server_address.sun_path, server_path);
+    int size = offsetof(struct sockaddr_un, sun_path) + strlen(server_address.sun_path);
+
+    VENOK_SOCKET_DESCRIPTOR fd = bsd_create_socket(AF_UNIX, SOCK_STREAM, 0);
+
+    if (fd == VENOK_SOCKET_ERROR) return VENOK_SOCKET_ERROR;
+
+    if (connect(fd, (struct sockaddr *) &server_address, size) != 0 && errno != EINPROGRESS) {
+        bsd_close_socket(fd);
+        return VENOK_SOCKET_ERROR;
+    }
+    return fd;
+}
