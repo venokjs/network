@@ -51,8 +51,8 @@ void v_socket_context_free(int ssl, struct v_socket_context *context);
 struct v_socket_context_options v_socket_verify_error(int ssl, struct v_socket *context);
 
 /* Setters of various async callbacks */
-void us_socket_context_on_pre_open(int ssl, struct us_socket_context_t *context,
-                                   VENOK_SOCKET_DESCRIPTOR (*on_pre_open)(VENOK_SOCKET_DESCRIPTOR fd));
+void v_socket_context_on_pre_open(int ssl, struct v_socket_context *context,
+                                  VENOK_SOCKET_DESCRIPTOR (*on_pre_open)(VENOK_SOCKET_DESCRIPTOR fd));
 
 void v_socket_context_on_open(int ssl, struct v_socket_context *context,
                               struct v_socket *(*on_open)(struct v_socket *s, int is_client, char *ip,
@@ -101,6 +101,10 @@ struct v_listen_socket *v_socket_context_listen_unix(int ssl, struct v_socket_co
 
 /* listen_socket.c/.h */
 void v_listen_socket_close(int ssl, struct v_listen_socket *ls);
+
+/* Adopt a socket which was accepted either internally, or from another accept() outside v_sockets */
+struct v_socket *v_adopt_accepted_socket(int ssl, struct v_socket_context *context, VENOK_SOCKET_DESCRIPTOR client_fd,
+                                         unsigned int socket_ext_size, char *addr_ip, int addr_ip_length);
 
 /* Land in on_open or on_connection_error or return null or return socket */
 struct v_socket *v_socket_context_connect(int ssl, struct v_socket_context *context,
