@@ -77,11 +77,6 @@ void v_socket_context_on_long_timeout(int ssl, struct v_socket_context *context,
 void v_socket_context_on_connect_error(int ssl, struct v_socket_context *context,
                                        struct v_socket *(*on_connect_error)(struct v_socket *s, int code));
 
-void v_socket_context_on_handshake(int ssl, struct v_socket_context *context,
-                                   void (*on_handshake)(struct v_socket *, int success,
-                                                        struct v_bun_verify_error verify_error, void *custom_data),
-                                   void *custom_data);
-
 /* Emitted when a socket has been half-closed */
 void v_socket_context_on_end(int ssl, struct v_socket_context *context,
                              struct v_socket *(*on_end)(struct v_socket *s));
