@@ -12,7 +12,7 @@ struct v_timer *v_create_timer(struct v_loop *loop, int fallthrough, unsigned in
 void *v_timer_ext(struct v_timer *timer);
 
 /* Close timer */
-void v_timer_close(struct v_timer *timer);
+void v_timer_close(struct v_timer *timer, int fallthrough);
 
 /* Arm a timer with a delay from now and eventually a repeat delay.
  * Specify 0 as repeat delay to disable repeating. Specify both 0 to disarm. */
