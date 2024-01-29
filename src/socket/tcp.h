@@ -43,7 +43,7 @@ void *v_socket_context_get_native_handle(int ssl, struct v_socket_context *conte
 
 /* A socket context holds shared callbacks and user data extension for associated sockets */
 struct v_socket_context *v_create_socket_context(int ssl, struct v_loop *loop,
-                                                 int ext_size, struct v_bun_socket_context_options options);
+                                                 int ext_size, struct v_socket_context_options options);
 
 /* Delete resources allocated at creation time. */
 void v_socket_context_free(int ssl, struct v_socket_context *context);
