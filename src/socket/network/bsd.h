@@ -93,7 +93,7 @@ int bsd_udp_packet_buffer_ecn(void *msgvec, int index);
 
 void *bsd_create_udp_packet_buffer();
 
-void bsd_udp_buffer_set_packet_payload(struct us_udp_packet_buffer_t *send_buf, int index, int offset, void *payload, int length,
+void bsd_udp_buffer_set_packet_payload(struct v_udp_packet_buffer *send_buf, int index, int offset, void *payload, int length,
                                        void *peer_addr);
 
 /* Shared Layer */
