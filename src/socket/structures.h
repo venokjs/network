@@ -20,6 +20,13 @@
 /* Guaranteed alignment of extension memory */
 #define VENOK_EXT_ALIGNMENT 16
 
+enum {
+    /* No meaning, default listen option */
+    VENOK_LISTEN_DEFAULT,
+    /* We exclusively own this port, do not share it */
+    VENOK_LISTEN_EXCLUSIVE_PORT
+};
+
 /* Decide what eventing system to use by default */
 #if !defined(VENOK_USE_EPOLL) && !defined(VENOK_USE_LIBUV) && !defined(VENOK_USE_KQUEUE)
 #if defined(_WIN32)
