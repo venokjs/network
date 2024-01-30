@@ -24,6 +24,11 @@
 #include "../eventing/libuv.h"
 #endif
 
+struct v_cert_string {
+    const char *str;
+    size_t len;
+};
+
 /* Poll type and what it polls for */
 enum {
     /* Two first bits */
