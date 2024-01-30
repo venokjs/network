@@ -14,12 +14,10 @@
 #include "./sni_tree.h"
 #include "./root_certs.h"
 
-static X509 *root_cert_instances[sizeof(root_certs) / sizeof(root_certs[0])] = {
-        NULL};
+static X509 *root_cert_instances[sizeof(root_certs) / sizeof(root_certs[0])] = {NULL};
 
 /* These are in root_certs.cpp */
 extern X509_STORE *v_get_default_ca_store();
-
 
 struct loop_ssl_data {
     char *ssl_read_input, *ssl_read_output;
