@@ -167,7 +167,7 @@ void v_socket_shutdown(int ssl, struct v_socket *s);
 void v_socket_shutdown_read(int ssl, struct v_socket *s);
 
 /* Returns whether the socket has been shut down or not */
-int v_socket_is_shut_down(int ssl, struct v_socket *s);
+int v_socket_is_shutdown(int ssl, struct v_socket *s);
 
 /* Returns whether this socket has been closed. Only valid if memory has not yet been released. */
 int v_socket_is_closed(int ssl, struct v_socket *s);
