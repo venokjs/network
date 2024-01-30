@@ -1,1 +1,2 @@
 src/socket/*.h linguist-language=C
+src/socket/crypto/root_certs.h linguist-vendored
